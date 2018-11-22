@@ -27,7 +27,6 @@ import com.yahoo.labs.samoa.instances.WekaToSamoaInstanceConverter;
 import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import moa.classifiers.meta.HEFT;
 import moa.core.Measurement;
 import moa.options.ClassOption;
 import weka.attributeSelection.AttributeSelection;
@@ -171,7 +170,7 @@ public class LFDD extends AbstractClassifier implements MultiClassClassifier {
         try {
             attsel.SelectAttributes(this.wbuffer);
         } catch (Exception ex) {
-            Logger.getLogger(HEFT.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(LFDD.class.getName()).log(Level.SEVERE, null, ex);
         }
 
         return attsel;

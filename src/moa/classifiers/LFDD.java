@@ -1,4 +1,3 @@
-
 /*
  *    LFDD.java
  * 
@@ -19,14 +18,16 @@
  */
 package moa.classifiers;
 
+import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import com.github.javacliparser.IntOption;
 import com.yahoo.labs.samoa.instances.Instance;
 import com.yahoo.labs.samoa.instances.Instances;
 import com.yahoo.labs.samoa.instances.SamoaToWekaInstanceConverter;
 import com.yahoo.labs.samoa.instances.WekaToSamoaInstanceConverter;
-import java.util.Arrays;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 import moa.core.Measurement;
 import moa.options.ClassOption;
 import weka.attributeSelection.AttributeSelection;
@@ -36,12 +37,18 @@ import weka.attributeSelection.SymmetricalUncertAttributeSetEval;
 /**
  * LFDD: Landmark-based feature drift detector
  *
- * <p>See details in:<br> Jean Paul Barddal, Heitor Murilo Gomes, Fabrício 
- * Enembreck, Bernhard Pfahringer. A survey on feature drift adaptation: 
- * Definition, benchmark, challenges and future directions. In System and 
- * Software, DOI: 10.1016/j.jss.2016.07.005, ELSEVIER, 2017.</p>
+ * <p>
+ * See details in:<br>
+ * Jean Paul Barddal, Heitor Murilo Gomes, Fabrício Enembreck, Bernhard
+ * Pfahringer. A survey on feature drift adaptation: Definition, benchmark,
+ * challenges and future directions. In System and Software, DOI:
+ * 10.1016/j.jss.2016.07.005, ELSEVIER, 2017.
+ * </p>
  *
- * <p>Parameters:</p> <ul>
+ * <p>
+ * Parameters:
+ * </p>
+ * <ul>
  * <li>-l : Base Classiﬁer to train.</li>
  * <li>-c : Chunk size</li>
  * </ul>
@@ -53,12 +60,12 @@ public class LFDD extends AbstractClassifier implements MultiClassClassifier {
 
     private static final long serialVersionUID = 1L;
 
-    public ClassOption baseLearnerOption = new ClassOption("baseLearner", 'l',
-        "Classifier to train.", Classifier.class, "trees.HoeffdingTree");
+    public ClassOption baseLearnerOption = new ClassOption("baseLearner", 'l', "Classifier to train.", Classifier.class,
+            "trees.HoeffdingTree");
 
     public IntOption chunkSizeOption = new IntOption("chunkSize", 'c',
-        "The chunk size used for classifier creation and evaluation.", 500, 1, Integer.MAX_VALUE);
-    
+            "The chunk size used for classifier creation and evaluation.", 500, 1, Integer.MAX_VALUE);
+
     protected Classifier classifier;
     protected AttributeSelection attSelector;
     protected Instances buffer;
@@ -68,8 +75,7 @@ public class LFDD extends AbstractClassifier implements MultiClassClassifier {
     protected int[] currentAttr;
 
     @Override
-    public void resetLearningImpl()
-    {
+    public void resetLearningImpl() {
         this.classifier = ((Classifier) getPreparedClassOption(this.baseLearnerOption)).copy();
         this.classifier.resetLearning();
         this.buffer = null;
@@ -78,8 +84,7 @@ public class LFDD extends AbstractClassifier implements MultiClassClassifier {
     }
 
     @Override
-    public void trainOnInstanceImpl(Instance inst)
-    {
+    public void trainOnInstanceImpl(Instance inst) {
         // Store instance in the buffer
         if (this.buffer == null) {
             this.buffer = new Instances(inst.dataset());
@@ -100,18 +105,16 @@ public class LFDD extends AbstractClassifier implements MultiClassClassifier {
             } catch (Exception ex) {
                 Logger.getLogger(LFDD.class.getName()).log(Level.SEVERE, null, ex);
             }
-            
+
             Arrays.sort(newAttr);
-            if(!Arrays.equals(this.currentAttr, newAttr))
-            {
+            if (!Arrays.equals(this.currentAttr, newAttr)) {
                 this.classifier.resetLearning();
                 this.convToMoa = new WekaToSamoaInstanceConverter();
                 this.currentAttr = newAttr;
             }
             this.buffer = new Instances(this.getModelContext());
         }
-        if(this.attSelector != null)
-        {
+        if (this.attSelector != null) {
             weka.core.Instance winst = this.convToWeka.wekaInstance(inst);
             try {
                 trainInst = this.convToMoa.samoaInstance(this.attSelector.reduceDimensionality(winst));
@@ -119,25 +122,23 @@ public class LFDD extends AbstractClassifier implements MultiClassClassifier {
                 Logger.getLogger(LFDD.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-        this.classifier.trainOnInstance(trainInst);        
+        this.classifier.trainOnInstance(trainInst);
     }
 
     @Override
-    public boolean isRandomizable()
-    {
+    public boolean isRandomizable() {
         return true;
     }
 
     @Override
-    public double[] getVotesForInstance(Instance inst)
-    {
+    public double[] getVotesForInstance(Instance inst) {
         Instance trainInst = inst.copy();
 
         try {
-            if(this.attSelector != null){
+            if (this.attSelector != null) {
                 weka.core.Instance winst = this.convToWeka.wekaInstance(inst);
                 trainInst = this.convToMoa.samoaInstance(this.attSelector.reduceDimensionality(winst));
-            }            
+            }
         } catch (Exception ex) {
             Logger.getLogger(LFDD.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -145,19 +146,16 @@ public class LFDD extends AbstractClassifier implements MultiClassClassifier {
     }
 
     @Override
-    public void getModelDescription(StringBuilder out, int indent)
-    {
+    public void getModelDescription(StringBuilder out, int indent) {
     }
 
     @Override
-    protected Measurement[] getModelMeasurementsImpl()
-    {
+    protected Measurement[] getModelMeasurementsImpl() {
         Measurement[] measurements = null;
         return measurements;
     }
 
-    private AttributeSelection performFeatureSelection()
-    {
+    private AttributeSelection performFeatureSelection() {
         this.wbuffer = this.convToWeka.wekaInstances(this.buffer);
         AttributeSelection attsel = new AttributeSelection();
         SymmetricalUncertAttributeSetEval evaluator = new SymmetricalUncertAttributeSetEval();
